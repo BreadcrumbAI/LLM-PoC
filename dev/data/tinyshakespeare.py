@@ -22,7 +22,8 @@ from data_common import download_file, write_datafile
 # -----------------------------------------------------------------------------
 DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), "tinyshakespeare")
 gpt2_base = tiktoken.get_encoding("gpt2")
-SPECIAL_TOKENS={'<|endoftext|>','<|ref|>'}
+SPECIAL_TOKENS={'<|endoftext|>','<|br|>','<|er|>'}
+DOC_ID = 1 
 
 
 def encode(s):
@@ -47,13 +48,14 @@ def save_better_text(text):
         bt.write(text)
     
 
-def makeTextBetter(text):
+def makeTextBetter(text, docId=DOC_ID):
     yield '<|endoftext|>'
     counter = 1
     for part in text.split('\n\n'):
-        docRef = f"TS-1-{counter}"
-        yield '<|ref|>'
+        docRef = f"TS-{docId}-{counter}"
+        yield '<|br|>'
         yield docRef
+        yield '<|er|>'
         yield ' '
         yield part
         yield '\n\n'
@@ -63,10 +65,16 @@ def makeTextBetter(text):
 
 def tokenize():
     data_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare.txt")
-    text = open(data_filename, 'r').read()
-    # let's treat every person's statement in the dialog as a separate document
+    data_filename2 = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare_new.txt")
 
-    text = ''.join(makeTextBetter(text))
+    text1 = open(data_filename, 'r').read()
+    text1 = ''.join(makeTextBetter(text1))
+
+    text2 = open(data_filename2, 'r').read()
+    text2 = ''.join(makeTextBetter(text2, 2))
+
+    # Complete corpus:
+    text = "\n\n".join([text1, text2])
     save_better_text(text)
 
     # encode the text
