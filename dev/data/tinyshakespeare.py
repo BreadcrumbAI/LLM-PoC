@@ -21,9 +21,12 @@ from data_common import download_file, write_datafile
 
 # -----------------------------------------------------------------------------
 DATA_CACHE_DIR = os.path.join(os.path.dirname(__file__), "tinyshakespeare")
+gpt2_base = tiktoken.get_encoding("gpt2")
+SPECIAL_TOKENS={'<|endoftext|>','<|ref|>'}
 
-enc = tiktoken.get_encoding("gpt2")
-encode = lambda s: enc.encode(s, allowed_special={'<|endoftext|>'})
+
+def encode(s):
+    return gpt2_base.encode(s, allowed_special=SPECIAL_TOKENS)
 
 def download():
     """Downloads the TinyShakespeare dataset to DATA_CACHE_DIR"""
@@ -37,12 +40,35 @@ def download():
     else:
         print(f"{data_filename} already exists, skipping download...")
 
+def save_better_text(text):
+    data_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare_annotated.txt")
+    print(f"Writing {data_filename} ...")
+    with open(data_filename, 'wt') as bt:
+        bt.write(text)
+    
+
+def makeTextBetter(text):
+    yield '<|endoftext|>'
+    counter = 1
+    for part in text.split('\n\n'):
+        docRef = f"TS-1-{counter}"
+        yield '<|ref|>'
+        yield docRef
+        yield ' '
+        yield part
+        yield '\n\n'
+        yield '<|endoftext|>'
+        counter += 1
+  
+
 def tokenize():
     data_filename = os.path.join(DATA_CACHE_DIR, "tiny_shakespeare.txt")
     text = open(data_filename, 'r').read()
     # let's treat every person's statement in the dialog as a separate document
-    text = "<|endoftext|>" + text
-    text = text.replace('\n\n', '\n\n<|endoftext|>')
+
+    text = ''.join(makeTextBetter(text))
+    save_better_text(text)
+
     # encode the text
     tokens = encode(text)
     # let's take the first 32,768 tokens as the validation split (~10%)

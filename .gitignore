@@ -36,5 +36,8 @@ dev/cuda/global_norm
 *.exe
 *.o
 
+# cudnn
+cudnn-frontend
+
 # log files
 *.log
